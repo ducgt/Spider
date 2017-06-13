@@ -4,9 +4,44 @@
 #
 # Don't forget to add your pipeline to the ITEM_PIPELINES setting
 # See: http://doc.scrapy.org/en/latest/topics/item-pipeline.html
+import pymongo
 from scrapy import signals
 from scrapy.exporters import JsonLinesItemExporter
+import logging as logger
+from pymongo import ReturnDocument
 
+
+class MongoPipeline(object):
+    collection_name = 'scrapy_items'
+    def __init__(self, mongo_uri, mongo_db):
+        self.mongo_uri = mongo_uri
+        self.mongo_db = mongo_db
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls(
+                # mongo_uri=crawler.settings.get('MONGO_URI'),
+                # mongo_db=crawler.settings.get('MONGO_DATABASE', 'items')
+                mongo_uri='mongodb://poluo:poluo123@118.190.175.203:27017/data',
+                mongo_db='data'
+        )
+    def open_spider(self, spider):
+        self.client = pymongo.MongoClient(self.mongo_uri)
+        self.db = self.client[self.mongo_db]
+        self.col = self.db.music
+
+    def close_spider(self, spider):
+        self.client.close()
+
+    def process_item(self, item, spider):
+        data = dict(item)
+        for song in data['song_list']:
+            if not self.col.find_one({'id':song['id']}):
+                song['play_list'] = [data['url'],]
+                self.col.insert(song)
+            else:
+                song['play_list'] = data['url']
+                self.col.find_one_and_update({'id':song['id']},{'$push':{'play_list':song['play_list']}},return_document=False)
+        return None
 
 class JsonExportPipeline(object):
     def __init__(self):
@@ -23,7 +58,7 @@ class JsonExportPipeline(object):
         return pipeline
 
     def spider_opened(self, spider):
-        file = open('music_{}.json'.format(self.file_count), 'w+b')
+        file = open('music_{}.json'.format(self.file_count), 'a+b')
         self.files[spider] = file
         self.exporter = JsonLinesItemExporter(file)
         self.exporter.start_exporting()
