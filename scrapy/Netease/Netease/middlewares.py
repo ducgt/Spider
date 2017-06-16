@@ -9,7 +9,6 @@ class CrawlMiddleware(object):
     def __init__(self):
         self.request_count = 0
         self.change_ip()
-        self.count = 0
         # self.cookie = self.get_new_cookies()
 
     def process_request(self, request, spider):
@@ -29,7 +28,7 @@ class CrawlMiddleware(object):
 
     def process_response(self, request, response, spider):
         if response.status != 200:
-            if self.count < 5:
+            if self.request_count < 5:
                 return request
             logger.info('response status not 200,need change ip {}'.format(response.status))
             self.change_ip()
@@ -39,7 +38,7 @@ class CrawlMiddleware(object):
 
     def change_ip(self):
         self.agent = random.choice(AGENTS_ALL)
-        self.count = 0
+        self.request_count = 0
         status, res = subprocess.getstatusoutput('adsl-stop')
         if status == 0:
             logger.debug('adsl stop success')
