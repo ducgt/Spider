@@ -16,12 +16,13 @@ class MongoPipeline(object):
     def __init__(self, mongo_uri, mongo_db):
         self.mongo_uri = mongo_uri
         self.mongo_db = mongo_db
+
     @classmethod
     def from_crawler(cls, crawler):
         return cls(
                 # mongo_uri=crawler.settings.get('MONGO_URI'),
                 # mongo_db=crawler.settings.get('MONGO_DATABASE', 'items')
-                mongo_uri='mongodb://poluo:poluo123@118.190.175.203:27017/data',
+                mongo_uri='mongodb://user:passwd@ip:port/data',
                 mongo_db='data'
         )
     def open_spider(self, spider):
@@ -34,14 +35,12 @@ class MongoPipeline(object):
 
     def process_item(self, item, spider):
         data = dict(item)
+        operations = []
         for song in data['song_list']:
-            if not self.col.find_one({'id':song['id']}):
-                song['play_list'] = [data['url'],]
-                self.col.insert(song)
-            else:
-                song['play_list'] = data['url']
-                self.col.find_one_and_update({'id':song['id']},{'$push':{'play_list':song['play_list']}},return_document=False)
-        return None
+            song['play_list'] = data['url']
+            operations.append(UpdateOne({'id':song['id']},{'$addToSet':{'play_list':song['play_list']}},upsert=True))
+        self.col.bulk_write(operations,ordered = False)
+
 
 class JsonExportPipeline(object):
     def __init__(self):
