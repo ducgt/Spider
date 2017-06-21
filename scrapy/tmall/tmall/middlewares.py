@@ -1,11 +1,19 @@
 import logging as logger
-from tmall.agents import AGENTS
 import random
 
 
 class CustomNormalMiddleware(object):
     def __init__(self):
-        self.cookies = {}
+        res ={}
+        with open('cookies.txt', 'r') as fobj:
+            for line in fobj:
+                tmp = line.split(';')
+                for one in tmp:
+                    index = one.index('=')
+                    res[one[:index].strip()] = one[index + 1:].replace('\"', '')
+            logger.info(res)
+        self.cookies = res
+
 
     def process_request(self, request, spider):
         try:
@@ -24,7 +32,6 @@ class CustomNormalMiddleware(object):
             request.headers['cache-control'] = 'max-age=0'
             request.headers['upgrade-insecure-requests'] = 1
             request.headers['DNT'] = 1
-            logger.debug('reqeust headers{}'.format(request.headers))
         try:
             headers_enable = request.meta.get('headers')
         except Exception as e:
@@ -35,6 +42,7 @@ class CustomNormalMiddleware(object):
                 request.headers['Host'] = request.meta.get('Host')
             except Exception as e:
                 logger.info(e)
+
         if self.cookies:
             request.cookies = self.cookies
 
