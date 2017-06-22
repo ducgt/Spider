@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import scrapy
 import json
-import re
 from tmall.items import TmallItem
 
 
@@ -19,21 +18,34 @@ class CommentSpider(scrapy.Spider):
         for one in category_dict.values():
             if one:
                 host = one.replace('//', '').split('/')[0]
-                yield scrapy.Request(url='https:' + one, callback=self.parse_category,
-                                     meta={'Host': host, 'headers': True})
-                break
+                self.logger.info(one)
+                if 'list' in host:
+                    yield scrapy.Request(url='https:' + one, callback=self.parse_every_category,
+                                         meta={'Host': 'list.tmall.com', 'headers': True})
+                else:
+                    yield scrapy.Request(url='https:' + one, callback=self.parse_category,
+                                         meta={'Host': host, 'headers': True})
+            break
 
     def parse_category(self, response):
         raw_data = response.css('#J_TmFushiNavCate > ul > li > ul.cate-bd.clearfix > li')
+        if not raw_data:
+            raw_data = response.css('div.slider-content > div.jia-left-nav > ul > li > a')
+        if not raw_data:
+            raw_data = response.css('ul.cate-nav > li > ul.cate-bd.clearfix > li > a')
+        if not raw_data:
+            raw_data = response.css('#J_MuiCategoryMenu > ul > li > a.cat-heigh-light')
+
+        if not raw_data:
+            self.logger.warning(response.url)
+
         for one in raw_data:
             link = one.css('::attr(href)').extract_first()
-            self.logger.info('get sub category https:'+link)
+            self.logger.info('get sub category https:' + link)
             yield scrapy.Request(url='https:' + link, callback=self.parse_every_category,
                                  meta={'Host': 'list.tmall.com', 'headers': True})
-            break
 
     def parse_every_category(self, response):
-        self.logger.info(response.url)
         raw_data = response.css('#J_ItemList > div')
         for one in raw_data:
             name = one.css('div > p.productTitle > a::text').extract_first()
@@ -42,13 +54,14 @@ class CommentSpider(scrapy.Spider):
             shop_name = one.css('div > div.productShop > a::text').extract_first()
             shop_url = one.css('div > div.productShop > a::attr(href)').extract_first()
             yield TmallItem({'name': name, 'url': url, 'price': price, 'shop_name': shop_name, 'shop_url': shop_url})
-            break
 
         next_page = response.css(
             '#content > div.main > div.ui-page > div > b.ui-page-num > a.ui-page-next::attr(href)').extract_first()
-        next_page = 'https://list.tmall.com/search_product.htm' + next_page
-        yield scrapy.Request(url=next_page, callback=self.parse_every_category,
-                             meta={'Host': 'list.tmall.com', 'headers': True})
+        if next_page:
+            next_page = 'https://list.tmall.com/search_product.htm' + next_page
+            self.logger.info('next page {}'.format(next_page))
+            yield scrapy.Request(url=next_page, callback=self.parse_every_category,
+                                 meta={'Host': 'list.tmall.com', 'headers': True})
 
     @staticmethod
     def process_cat(category):
