@@ -25,7 +25,7 @@ class CommentSpider(scrapy.Spider):
                 else:
                     yield scrapy.Request(url='https:' + one, callback=self.parse_category,
                                          meta={'Host': host, 'headers': True})
-            break
+
 
     def parse_category(self, response):
         raw_data = response.css('#J_TmFushiNavCate > ul > li > ul.cate-bd.clearfix > li')
@@ -42,8 +42,10 @@ class CommentSpider(scrapy.Spider):
         for one in raw_data:
             link = one.css('::attr(href)').extract_first()
             self.logger.info('get sub category https:' + link)
+            host = link.replace('//', '').split('/')[0]
+            # self.logger.debug(host)
             yield scrapy.Request(url='https:' + link, callback=self.parse_every_category,
-                                 meta={'Host': 'list.tmall.com', 'headers': True})
+                                 meta={'Host': host, 'headers': True})
 
     def parse_every_category(self, response):
         raw_data = response.css('#J_ItemList > div')
