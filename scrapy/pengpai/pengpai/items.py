@@ -8,7 +8,9 @@
 import scrapy
 
 
-class PengpaiItem(scrapy.Item):
-    # define the fields for your item here like:
-    # name = scrapy.Field()
-    pass
+class NewsItem(scrapy.Item):
+    title = scrapy.Field()
+    source = scrapy.Field()
+    time = scrapy.Field()
+    text = scrapy.Field()
+    video = scrapy.Field()

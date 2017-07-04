@@ -19,8 +19,8 @@ NEWSPIDER_MODULE = 'pengpai.spiders'
 #USER_AGENT = 'pengpai (+http://www.yourdomain.com)'
 
 # Obey robots.txt rules
-ROBOTSTXT_OBEY = False
-
+ROBOTSTXT_OBEY = True
+LOG_LEVEL = "DEBUG"
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
 #CONCURRENT_REQUESTS = 32
 
@@ -64,9 +64,9 @@ DOWNLOADER_MIDDLEWARES = {
 
 # Configure item pipelines
 # See http://scrapy.readthedocs.org/en/latest/topics/item-pipeline.html
-#ITEM_PIPELINES = {
-#    'pengpai.pipelines.SomePipeline': 300,
-#}
+ITEM_PIPELINES = {
+   'pengpai.pipelines.JsonExportPipeline': 300,
+}
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See http://doc.scrapy.org/en/latest/topics/autothrottle.html
