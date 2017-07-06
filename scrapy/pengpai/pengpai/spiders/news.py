@@ -5,7 +5,7 @@ from pengpai.items import NewsItem
 import time
 import random
 import pyreBloom
-
+import json
 
 class NewsSpider(scrapy.Spider):
     name = "news"
@@ -19,6 +19,8 @@ class NewsSpider(scrapy.Spider):
     my_host = '127.0.0.1'.encode('utf8')
     my_passwd = 'poluo123'.encode('utf8')
     filter = pyreBloom.PyreBloom(my_key, 200000, 0.01, host=my_host, password=my_passwd)
+    request_count = 0
+    request_url = []
 
     def parse(self, response):
         # 视频
@@ -119,9 +121,10 @@ class NewsSpider(scrapy.Spider):
             raise TypeError
 
     def parse_news(self, response):
-
+        self.request_count += 1
+        
         title = response.css('head > title::text').extract_first()
-
+        self.request_url.append({'url':response.url,'title':title})
         video = response.css('div.video_news_detail.video_w1200 > video > source::attr(src)').extract_first()
         if video:
             text = response.xpath('/html/body/div[3]/div[2]/div/div[2]/p/text()').extract_first().strip()
@@ -138,6 +141,8 @@ class NewsSpider(scrapy.Spider):
 
     def closed(self, reason):
         self.logger.info('spider {} closed {}'.format(self.name, reason))
+        with open('res_{}.json'.format(int(time.time())),'w') as fobj:
+            json.dump({'count':self.request_count,'url':self.request_url}, fobj)
 
 
 if __name__ == '__main__':
