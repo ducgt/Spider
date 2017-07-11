@@ -9,6 +9,11 @@ import scrapy
 
 
 class JyeooItem(scrapy.Item):
-    # define the fields for your item here like:
-    # name = scrapy.Field()
-    pass
+    content = scrapy.Field()
+    option = scrapy.Field()
+    point = scrapy.Field()
+    topic = scrapy.Field()
+    analyise = scrapy.Field()
+    answer = scrapy.Field()
+    comment = scrapy.Field()
+    teacher = scrapy.Field()
